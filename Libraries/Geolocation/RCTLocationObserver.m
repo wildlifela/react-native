@@ -31,6 +31,7 @@ typedef struct {
   double timeout;
   double maximumAge;
   double accuracy;
+  double distanceFilter;
 } RCTLocationOptions;
 
 @implementation RCTConvert (RCTLocationOptions)
@@ -41,7 +42,8 @@ typedef struct {
   return (RCTLocationOptions){
     .timeout = [RCTConvert NSTimeInterval:options[@"timeout"]] ?: INFINITY,
     .maximumAge = [RCTConvert NSTimeInterval:options[@"maximumAge"]] ?: INFINITY,
-    .accuracy = [RCTConvert BOOL:options[@"enableHighAccuracy"]] ? kCLLocationAccuracyBest : RCT_DEFAULT_LOCATION_ACCURACY
+    .accuracy = [RCTConvert BOOL:options[@"enableHighAccuracy"]] ? kCLLocationAccuracyBest : RCT_DEFAULT_LOCATION_ACCURACY,
+    .distanceFilter = [RCTConvert double:options[@"distanceFilter"]]?: RCT_DEFAULT_LOCATION_ACCURACY
   };
 }
 
@@ -128,7 +130,7 @@ RCT_EXPORT_MODULE()
 {
   if (!_locationManager) {
     _locationManager = [CLLocationManager new];
-    _locationManager.distanceFilter = RCT_DEFAULT_LOCATION_ACCURACY;
+    _locationManager.distanceFilter = _observerOptions.distanceFilter;
     _locationManager.delegate = self;
   }
 

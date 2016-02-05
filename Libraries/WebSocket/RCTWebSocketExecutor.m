@@ -19,6 +19,10 @@
 #import "RCTUtils.h"
 #import "RCTSRWebSocket.h"
 
+// Auto generate header file container local development machine's IP Address
+// See "Export IP address for debugging on device" under "Build Phases"
+#import "RCTIPaddress.h"
+
 typedef void (^RCTWSMessageCallback)(NSError *error, NSDictionary<NSString *, id> *reply);
 
 @interface RCTWebSocketExecutor () <RCTSRWebSocketDelegate>
@@ -54,11 +58,13 @@ RCT_EXPORT_MODULE()
   if (!_url) {
     NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
     NSInteger port = [standardDefaults integerForKey:@"websocket-executor-port"] ?: 8081;
-    NSString *host = [[_bridge bundleURL] host];
-    if (!host) {
-      host = @"localhost";
-    }
-    NSString *URLString = [NSString stringWithFormat:@"http://%@:%zd/debugger-proxy?role=client", host, port];
+
+    #if TARGET_OS_SIMULATOR
+        NSString *URLString = [NSString stringWithFormat:@"http://localhost:%zd/debugger-proxy?role=client", port];
+    #else
+        NSString *URLString = [NSString stringWithFormat:@"http://%@:%zd/debugger-proxy?role=client", LOCAL_IP_ADDRESS, port];
+    #endif
+
     _url = [RCTConvert NSURL:URLString];
   }
 

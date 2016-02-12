@@ -62,7 +62,7 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void connect(final String url, @Nullable final ReadableArray protocols, @Nullable final ReadableMap options, final int id) {
+  public void connect(final String url, @Nullable final ReadableArray protocols, @Nullable final ReadableMap headers, final int id) {
     // ignoring protocols, since OKHttp overrides them.
     OkHttpClient client = new OkHttpClient();
 
@@ -71,18 +71,31 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
     // Disable timeouts for read
     client.setReadTimeout(0, TimeUnit.MINUTES);
 
+    ReadableMapKeySetIterator iterator = headers.keySetIterator();
     Request.Builder builder = new Request.Builder()
         .tag(id)
         .url(url);
 
-    if (options != null && options.hasKey("origin")) {
-      if (ReadableType.String.equals(options.getType("origin"))) {
-        builder.addHeader("Origin", options.getString("origin"));
-      } else {
-        FLog.w(
-          ReactConstants.TAG,
-          "Ignoring: requested origin, value not a string");
+    if (headers != null) {
+
+      if (!headers.hasKey("origin")) {
+        // set default origin
+        builder.addHeader("origin", "Default");
       }
+
+      while (iterator.hasNextKey()) {
+        String key = iterator.nextKey();
+        if (ReadableType.String.equals(headers.getType(key))) {
+          builder.addHeader(key, headers.getString(key));
+        } else {
+          FLog.w(
+            ReactConstants.TAG,
+            "Ignoring: requested origin, value not a string");
+        }
+      }
+    } else {
+      // Set default origin
+      builder.addHeader("origin", "Default");
     }
 
     WebSocketCall.create(client, builder.build()).enqueue(new WebSocketListener() {
@@ -187,4 +200,9 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
     params.putString("message", message);
     sendEvent("websocketFailed", params);
   }
+
+  // private String Origin() {
+  //   // Create origin strng here
+  // }
+
 }

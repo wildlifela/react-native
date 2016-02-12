@@ -11,6 +11,9 @@ package com.facebook.react.modules.websocket;
 
 import java.io.IOException;
 import javax.annotation.Nullable;
+import java.net.URISyntaxException;
+import java.net.URI;
+import android.util.Log;
 
 import com.facebook.common.logging.FLog;
 import com.facebook.react.bridge.Arguments;
@@ -29,6 +32,7 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
+import com.squareup.okhttp.ResponseBody;
 import com.squareup.okhttp.ws.WebSocket;
 import com.squareup.okhttp.ws.WebSocketCall;
 import com.squareup.okhttp.ws.WebSocketListener;
@@ -62,7 +66,7 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void connect(final String url, @Nullable final ReadableArray protocols, @Nullable final ReadableMap options, final int id) {
+  public void connect(final String url, @Nullable final ReadableArray protocols, @Nullable final ReadableMap headers, final int id) {
     // ignoring protocols, since OKHttp overrides them.
     OkHttpClient client = new OkHttpClient();
 
@@ -75,20 +79,38 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
         .tag(id)
         .url(url);
 
-    if (options != null && options.hasKey("origin")) {
-      if (ReadableType.String.equals(options.getType("origin"))) {
-        builder.addHeader("Origin", options.getString("origin"));
-      } else {
-        FLog.w(
-          ReactConstants.TAG,
-          "Ignoring: requested origin, value not a string");
+    if (headers != null) {
+      ReadableMapKeySetIterator iterator = headers.keySetIterator();
+
+      if (!headers.hasKey("origin")) {
+        builder.addHeader("origin", setDefaultOrigin(url));
       }
+
+      while (iterator.hasNextKey()) {
+        String key = iterator.nextKey();
+        if (ReadableType.String.equals(headers.getType(key))) {
+          builder.addHeader(key, headers.getString(key));
+        } else {
+          FLog.w(
+            ReactConstants.TAG,
+            "Ignoring: requested origin, value not a string");
+        }
+      }
+    } else {
+      builder.addHeader("origin", setDefaultOrigin(url));
     }
 
     WebSocketCall.create(client, builder.build()).enqueue(new WebSocketListener() {
 
       @Override
       public void onOpen(WebSocket webSocket, Response response) {
+        // Log.d("ReactNativeJS", "onOpen");
+        // Log.d("ReactNativeJS", "Response: " + response.toString());
+        // Log.d("ReactNativeJS", "Headers: " + response.headers());
+        // Log.d("ReactNativeJS", "Message: " + response.message());
+        // Log.d("ReactNativeJS", "Network response: " + response.networkResponse());
+        // Log.d("ReactNativeJS", "Body" + response.body());
+
         mWebSocketConnections.put(id, webSocket);
         WritableMap params = Arguments.createMap();
         params.putInt("id", id);
@@ -97,6 +119,10 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
 
       @Override
       public void onClose(int code, String reason) {
+        // Log.d("ReactNativeJS", "onFailure");
+        // Log.d("ReactNativeJS", "Code" +Integer.toString(code));
+        // Log.d("ReactNativeJS", "Reason" + reason);
+
         WritableMap params = Arguments.createMap();
         params.putInt("id", id);
         params.putInt("code", code);
@@ -106,6 +132,16 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
 
       @Override
       public void onFailure(IOException e, Response response) {
+
+        ResponseBody test = response.body();
+
+        // Log.d("ReactNativeJS", "onFailure");
+        // Log.d("ReactNativeJS", "Response: " + response.toString());
+        // Log.d("ReactNativeJS", "Headers: " + response.headers());
+        // Log.d("ReactNativeJS", "Message: " + response.message());
+        // Log.d("ReactNativeJS", "Network response: " + response.networkResponse());
+        // Log.d("ReactNativeJS", "Body: " + test);
+
         notifyWebSocketFailed(id, e.getMessage());
       }
 
@@ -187,4 +223,35 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
     params.putString("message", message);
     sendEvent("websocketFailed", params);
   }
+
+  private static String setDefaultOrigin(String url) {
+
+    try {
+      String defaultOrigin;
+      String scheme = "";
+
+      URI requestURI = new URI(url);
+      if (requestURI.getScheme().equals("wss")) {
+        Log.d("ReactNativeJS", "Got WSS");
+        scheme += "https";
+      } else if (requestURI.getScheme().equals("ws")) {
+        Log.d("ReactNativeJS", "Got WS");
+        scheme += "http";
+      }
+
+      if (requestURI.getPort() != -1) {
+        defaultOrigin = String.format("%s://%s:%s", scheme, requestURI.getHost(), requestURI.getPort());
+      } else {
+        defaultOrigin = String.format("%s://%s/", scheme, requestURI.getHost());
+      }
+      Log.d("ReactNativeJS", "Scheme" + scheme);
+
+      return defaultOrigin;
+
+    } catch(URISyntaxException e) {
+      Log.e("ReactNativeJS", e.getMessage());
+      return null;
+    }
+  }
+
 }

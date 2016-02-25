@@ -133,15 +133,6 @@ public class WebSocketModule extends ReactContextBaseJavaModule {
       @Override
       public void onFailure(IOException e, Response response) {
 
-        ResponseBody test = response.body();
-
-        // Log.d("ReactNativeJS", "onFailure");
-        // Log.d("ReactNativeJS", "Response: " + response.toString());
-        // Log.d("ReactNativeJS", "Headers: " + response.headers());
-        // Log.d("ReactNativeJS", "Message: " + response.message());
-        // Log.d("ReactNativeJS", "Network response: " + response.networkResponse());
-        // Log.d("ReactNativeJS", "Body: " + test);
-
         notifyWebSocketFailed(id, e.getMessage());
       }
 

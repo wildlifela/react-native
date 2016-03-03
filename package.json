@@ -81,6 +81,7 @@
   "main": "Libraries/react-native/react-native.js",
   "files": [
     "React",
+    "ReactAndroid",
     "React.podspec",
     "android",
     "Libraries",

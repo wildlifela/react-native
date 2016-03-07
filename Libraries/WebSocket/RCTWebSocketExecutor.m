@@ -57,11 +57,10 @@ RCT_EXPORT_MODULE()
     NSInteger port = [standardDefaults integerForKey:@"websocket-executor-port"] ?: 8081;
 
     #if TARGET_OS_SIMULATOR
-        NSString *URLString = [NSString stringWithFormat:@"http://localhost:%zd/debugger-proxy", port];
+        NSString *URLString = [NSString stringWithFormat:@"http://localhost:%zd/debugger-proxy?role=client", port];
     #else
-        NSString *URLString = [NSString stringWithFormat:@"http://%@:%zd/debugger-proxy", LOCAL_IP_ADDRESS, port];
+        NSString *URLString = [NSString stringWithFormat:@"http://%@:%zd/debugger-proxy?role=client", LOCAL_IP_ADDRESS, port];
     #endif
-
     _url = [RCTConvert NSURL:URLString];
   }
 

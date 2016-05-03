@@ -33,7 +33,7 @@ function buildBundle(args, config, output = outputBundle, packagerInstance) {
       entryFile: args['entry-file'],
       sourceMapUrl: args['sourcemap-output'],
       dev: args.dev,
-      minify: !args.dev,
+      minify: false, //!args.dev,
       platform: args.platform,
     };
 
